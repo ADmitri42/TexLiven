@@ -17,9 +17,8 @@ def as_matrix(sequences,token_to_i, max_len=None,PAD_ix=PAD_ix):
 
     matrix = np.zeros((len(sequences),max_len),dtype='int16') -1
     for i,seq in enumerate(sequences):
-        row_ix = np.array(list(map(token_to_i.get,seq)))[:max_len]
+        row_ix = np.array(list(map(lambda x: token_to_i.get(x, 0),seq)))[:max_len]
         matrix[i,:len(row_ix)] = row_ix
-
     return matrix
 
 
