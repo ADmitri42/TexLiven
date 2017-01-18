@@ -6,27 +6,27 @@ import json
 import theano
 import theano.tensor as T
 import lasagne
-from lasagne import layers
+
 from lasagne.objectives import categorical_crossentropy
 from lasagne.updates import adam
 
-PAD_ix = -1
-
-def as_matrix(sequences,token_to_i, max_len=None,PAD_ix=PAD_ix):
+def as_matrix(sequences,token_to_i, max_len=None):
     max_len = max_len or max(map(len,sequences))
-
+    
     matrix = np.zeros((len(sequences),max_len),dtype='int16') -1
     for i,seq in enumerate(sequences):
-        row_ix = np.array(list(map(lambda x: token_to_i.get(x, 0),seq)))[:max_len]
+        row_ix = list(filter(None.__ne__, map(token_to_i.get,seq)))[:max_len]
         matrix[i,:len(row_ix)] = row_ix
+    
     return matrix
 
 
-class Texliven:
+class Texliven(object):
     def __init__(self, pretrain=True, file_with_weights="Networks_weights.npz"):
         
         with open("tokens_id.json") as f:
             tokens_id = json.load(f)
+            
         self.token_to_id = tokens_id[u'token_to_id']
         self.id_to_token = tokens_id["id_to_token"]
         tokens = tokens_id["tokens"]
@@ -77,14 +77,16 @@ class Texliven:
 
         if pretrain:
             with np.load(file_with_weights, encoding="bytes") as weights_file:
-              lasagne.layers.set_all_param_values(l_out, weights_file["arr_0"])
+                lasagne.layers.set_all_param_values(l_out, weights_file["arr_0"])
 
     def generate_answer(self, question, answer_prefix = ("START",),t=1,sample=True, max_sim_count=1000):
         answer = list(answer_prefix)
         question = re.sub("\n", " ",question)
+        question = as_matrix([question],self.token_to_id)
+        
         for _ in range(max_sim_count):
-
-            next_let_probs = self.probs(as_matrix([question],self.token_to_id),as_matrix([answer],self.token_to_id) ).ravel()
+            
+            next_let_probs = self.probs(question, as_matrix([answer],self.token_to_id) ).ravel()
             next_let_probs = next_let_probs**t / np.sum(next_let_probs**t)
 
             if sample:
