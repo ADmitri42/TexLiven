@@ -36,21 +36,27 @@ class Texliven(object):
         input_sequence = T.matrix('token sequence', 'int32')
         target_phonemes = T.matrix('target phonemes', 'int32')
 
+        
         ##ENCODER
-        l_in = lasagne.layers.InputLayer(shape=(None, None), input_var=input_sequence)
-        l_mask = lasagne.layers.InputLayer(shape=(None, None), input_var=T.neq(input_sequence, -1))
+        l_in = lasagne.layers.InputLayer(shape=(None, None),input_var=input_sequence)
+        l_mask = lasagne.layers.InputLayer(shape=(None, None),input_var=T.neq(input_sequence,-1))
         l_emb = lasagne.layers.EmbeddingLayer(l_in, len(tokens), 40)
-        l_rnn = lasagne.layers.LSTMLayer(l_emb, 256, only_return_final=True, mask_input=l_mask)
+        l_rnn = lasagne.layers.LSTMLayer(l_emb,256,mask_input=l_mask)
+        l_rnn = lasagne.layers.LSTMLayer(l_rnn,256,only_return_final=True,mask_input=l_mask)
 
         ##DECODER
-        transc_in = lasagne.layers.InputLayer(shape=(None, None), input_var=target_phonemes)
-        transc_mask = lasagne.layers.InputLayer(shape=(None, None), input_var=T.neq(target_phonemes, -1))
+        transc_in = lasagne.layers.InputLayer(shape=(None, None),input_var=target_phonemes)
+        transc_mask = lasagne.layers.InputLayer(shape=(None, None),input_var=T.neq(target_phonemes,-1))
         transc_emb = lasagne.layers.EmbeddingLayer(transc_in, len(tokens), 50)
-        transc_rnn = lasagne.layers.LSTMLayer(transc_emb, 256, hid_init=l_rnn, mask_input=transc_mask)
+        transc_rnn = lasagne.layers.LSTMLayer(transc_emb,256,hid_init=l_rnn,mask_input=transc_mask)
+        transc_rnn = lasagne.layers.LSTMLayer(transc_rnn,256,hid_init=l_rnn,mask_input=transc_mask)
 
-        transc_rnn_flat = lasagne.layers.reshape(transc_rnn, (-1, transc_rnn.output_shape[-1]))
 
-        l_out = lasagne.layers.DenseLayer(transc_rnn_flat, len(tokens), nonlinearity=lasagne.nonlinearities.softmax)
+        #flatten batch and time to be compatible with feedforward layers (will un-flatten later)
+        transc_rnn_flat = lasagne.layers.reshape(transc_rnn, (-1,transc_rnn.output_shape[-1]))
+
+        l_out = lasagne.layers.DenseLayer(transc_rnn_flat,len(tokens),nonlinearity=lasagne.nonlinearities.softmax)
+
 
         self.l_out = l_out
 
