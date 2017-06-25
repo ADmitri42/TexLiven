@@ -66,7 +66,7 @@ class Texliven(object):
         ##DECODER
         transc_in = lasagne.layers.InputLayer(shape=(None, None),input_var=target_phonemes)
         transc_mask = lasagne.layers.InputLayer(shape=(None, None),input_var=T.neq(target_phonemes,-1))
-        transc_emb = lasagne.layers.EmbeddingLayer(transc_in, len(tokens), 50)
+        transc_emb = lasagne.layers.EmbeddingLayer(transc_in, len(tokens), 256, W=l_emb.W)
         transc_rnn = lasagne.layers.LSTMLayer(transc_emb,256,hid_init=l_rnn,mask_input=transc_mask)
         transc_rnn = lasagne.layers.LSTMLayer(transc_rnn,256,hid_init=l_rnn,mask_input=transc_mask)
 
